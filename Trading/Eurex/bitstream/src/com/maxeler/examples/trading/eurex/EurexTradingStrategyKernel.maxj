@@ -1,0 +1,79 @@
+package com.maxeler.examples.trading.eurex;
+
+import java.util.Map;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelLite;
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelLite.IO.PushInput;
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelLite.IO.PushOutput;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEVar;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEStruct;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEStructType;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEStructType.StructFieldType;
+import com.maxeler.maxcompiler.v2.managers.DFEManager;
+import com.maxeler.mpt.core.internal.orderentry.Message;
+import com.maxeler.mpt.core.orderentry.OrderEntryLinkType;
+import com.maxeler.mpt.core.protocols.fix.FIXFrameFormat;
+import com.maxeler.mpt.eurex.eti.EurexEtiConfiguration;
+import com.maxeler.mpt.eurex.internal.eti.EurexField;
+import com.maxeler.networking.v1.framed_kernels.FrameFormat;
+import com.maxeler.networking.v1.framed_kernels.FrameFormat.FieldInfo;
+import com.maxeler.networking.v1.framed_kernels.FramedLinkType;
+
+public class EurexTradingStrategyKernel extends KernelLite {
+	public EurexTradingStrategyKernel(DFEManager owner, String name, FramedLinkType mdLinkType, OrderEntryLinkType orderLinkType, EurexEtiConfiguration etiConfig) {
+		super(owner, name);
+
+		PushInput<DFEStruct> mdIn = io.pushInput("mdIn", mdLinkType.getDFEStructType(), 1);
+		PushOutput<DFEStruct> orderOut = io.pushOutput("orderOut", orderLinkType.getDFEStructType(), 1);
+
+		mdIn.stall <== orderOut.stall;
+		orderOut.valid <== mdIn.valid;
+
+		DFEVar sendOrder = mdIn.valid;
+
+		orderOut.data[orderLinkType.getSOF()] <== sendOrder;
+		orderOut.data[orderLinkType.getEOF()] <== sendOrder;
+		orderOut.data[orderLinkType.getMod()] <== constant.var(dfeUInt(orderLinkType.getDFEStructType().getTypeForField(orderLinkType.getMod()).getTotalBits()), 0);
+		orderOut.data[orderLinkType.getSessionID()] <== constant.var(dfeUInt(orderLinkType.getDFEStructType().getTypeForField(orderLinkType.getSessionID()).getTotalBits()), 0);
+
+		// extract the fields and types
+		FrameFormat orderEntryFormat = EurexTradingTypes.eurexTradingNewOrderSingleFormat.getFrameFormat();
+		Map<String, FieldInfo> fieldInfo = orderEntryFormat.getFieldInfo();
+
+		owner.logMsg("----------------");
+		owner.logMsg("New order: " + orderEntryFormat.getFieldNames().size() + " fields");
+		for(String s : orderEntryFormat.getFieldNames()) {
+			owner.logMsg("> " + s + ": " + fieldInfo.get(s).getType());
+		}
+
+		owner.logMsg("----------------");
+//		FIXFrameFormat<EurexField> msgFormat = EurexTradingTypes.eurexTradingNewOrderSingleFormat.getImpl();
+		FIXFrameFormat<EurexField> msgFormat = etiConfig.getOrderInputFormat().getImpl();
+		for(Message<EurexField>msg : msgFormat.getMsgs()) {
+			owner.logMsg("Message: " + msg.getMsgDef().getFields().size() + " fields");
+			for(EurexField f : msg.getMsgDef().getFields()) {
+				owner.logMsg("> " + f.getTag().getName() + ": " + f.getType());
+			}
+		}
+
+		owner.logMsg("----------------");
+		FrameFormat frameFormat = etiConfig.getOrderInputFormat().getFrameFormat();
+		owner.logMsg("Order link format: " + frameFormat.getFieldNames().size());
+		StructFieldType orderFields[] = new StructFieldType[frameFormat.getFieldNames().size()];
+		int i = 0;
+		for(String s : frameFormat.getFieldNames()) {
+			owner.logMsg("> " + i + ": " + s + " is " + frameFormat.getFieldInfo().get(s).getType());
+			StructFieldType bla = DFEStructType.sft(s, frameFormat.getFieldInfo().get(s).getType());
+			orderFields[i++] = bla;
+		}
+
+		owner.logMsg("----------------");
+
+		// create the new order
+		DFEStructType newOrderStructType = new DFEStructType(orderFields);
+		DFEStruct newOrder = newOrderStructType.newInstance(this);
+
+//		newOrder[]
+		orderOut.data[orderLinkType.getData()] <== newOrder.pack();
+	}
+}

@@ -1,0 +1,89 @@
+package com.maxeler.examples.trading.eurex;
+
+import com.maxeler.maxcompiler.v2.build.EngineParameters;
+import com.maxeler.maxcompiler.v2.managers.BuildConfig.Effort;
+import com.maxeler.maxcompiler.v2.managers.BuildConfig.OptimizationGoal;
+import com.maxeler.maxcompiler.v2.managers.DFEModel;
+import com.maxeler.mpt.core.MptConfiguration.Clock;
+import com.maxeler.mpt.core.internal.marketdata.MarketDataConfiguration.UdpChecksumMode;
+import com.maxeler.mpt.core.internal.marketdata.MarketDataConfiguration.UpdateOutputMode;
+import com.maxeler.networking.v1.managers.netlib.Max4NetworkConnection;
+
+public class EurexTradingEngineParameters extends EngineParameters {
+	public EurexTradingEngineParameters(String[] args) {
+		super(args);
+	}
+
+	@Override
+	protected void declarations() {
+		declareParam("DFEModel", DataType.DFEMODEL, DFEModel.ISCA);
+		declareParam("maxFileName", DataType.STRING, "eurexExample");
+		declareParam("hasStreamStatus", DataType.BOOL, true);
+		declareParam("mdConnectionA", Max4NetworkConnection.class, Max4NetworkConnection.QSFP_TOP_10G_PORT1);
+		declareParam("mdConnectionB", Max4NetworkConnection.class, Max4NetworkConnection.QSFP_BOT_10G_PORT1);
+		declareParam("orderEntryConnection", Max4NetworkConnection.class, Max4NetworkConnection.QSFP_TOP_10G_PORT1);
+		declareParam("optimizationGoal", OptimizationGoal.class, OptimizationGoal.SPEED);
+		declareParam("buildEffort", Effort.class, Effort.VERY_HIGH);
+		declareParam("hasChipscope", DataType.BOOL, false);
+		declareParam("mdClock", Clock.class, Clock.USE_NETWORK_CLOCK);
+		declareParam("maxSecurities", DataType.INT, 10);
+		declareParam("mdUpdateOutputMode", UpdateOutputMode.class, UpdateOutputMode.SECURITY_CHANGE);
+		declareParam("udpChecksumMode", UdpChecksumMode.class, UdpChecksumMode.DROP_BAD_PACKETS);
+		declareParam("tag", DataType.STRING, ""); // can be used to run two builds simultaneously with slightly different code
+	}
+
+	@Override
+	public String getBuildName() {
+		return super.getBuildName()
+		+ (hasChipscope() ? "_CS" : "")
+		+ getParam("tag");
+	}
+
+	public int getMaxSecurities() {
+		return getParam("maxSecurities");
+	}
+
+	public UpdateOutputMode getUpdateOutputMode() {
+		return getParam("mdUpdateOutputMode");
+	}
+
+	public UdpChecksumMode getUdpChecksumMode() {
+		return getParam("udpChecksumMode");
+	}
+
+	public boolean isSimulation() {
+		return getTarget() == Target.DFE_SIM;
+	}
+
+	public Clock getClock() {
+		return getParam("mdClock");
+	}
+
+	public boolean hasStreamStatus() {
+		return getParam("hasStreamStatus");
+	}
+
+	public Effort getBuildEffort() {
+		return getParam("buildEffort");
+	}
+
+	public OptimizationGoal getGoal() {
+		return getParam("optimizationGoal");
+	}
+
+	public boolean hasChipscope() {
+		return getParam("hasChipscope");
+	}
+
+	public Max4NetworkConnection getMdConnectionA() {
+		return getParam("mdConnectionA");
+	}
+
+	public Max4NetworkConnection getMdConnectionB() {
+		return getParam("mdConnectionB");
+	}
+
+	public Max4NetworkConnection getOrderEntryConnection() {
+		return getParam("orderEntryConnection");
+	}
+}

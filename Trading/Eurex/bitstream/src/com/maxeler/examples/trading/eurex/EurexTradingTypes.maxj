@@ -1,0 +1,80 @@
+package com.maxeler.examples.trading.eurex;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEType;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFETypeFactory;
+import com.maxeler.mpt.core.marketdata.Side;
+import com.maxeler.mpt.eurex.eobi.EurexEobiMarketDataFormat;
+import com.maxeler.mpt.eurex.eti.EurexEtiOrderFormat;
+
+public class EurexTradingTypes {
+	public static final EurexTradingMarketDataFormat eurexTradingMarketDataFormat = new EurexTradingMarketDataFormat(5);
+	public static class EurexTradingMarketDataFormat extends EurexEobiMarketDataFormat {
+		public EurexTradingMarketDataFormat(int numBookLevels) {
+			DFEType priceType  = DFETypeFactory.dfeInt(64);
+			DFEType exponentType  = DFETypeFactory.dfeInt(8);
+			DFEType numOrdersType = DFETypeFactory.dfeUInt(16);
+
+			for (Side side : Side.values()) {
+				for (int level = 1; level <= numBookLevels; ++level) {
+					addOrderBookTag(side, level, OrderBookTag.Price, priceType);
+					addOrderBookTag(side, level, OrderBookTag.Quantity);
+					addOrderBookTag(side, level, OrderBookTag.IsValid);
+				}
+			}
+
+			addField(Tag.Timestamp);
+			addField(Tag.TimestampValid);
+			addField(Tag.TimestampDoubt);
+			addField(Tag.Feed);
+
+			/*
+			 *
+			 * The way the system works is this:
+			 * When a UDP packet arrives, updates (MDEntries) are extracted from it and pushed to an OrderBook building unit.
+			 * The OrderBook builder might aggregate updates to a single book, based on the MD Entry.
+			 * An update will trigger a book to be output typically, when it's the last of a set of updates for a given security,
+			 * or when it's associated with a trade.
+			 *
+			 * The below fields are associated with the Update (market data entry) that triggered this book.
+			 * If for example, this was a trade summary message, the MDEntryType will be '2' to reflect that it is a Trade.
+			 *
+			 *
+			 */
+
+			addField(Tag.MsgSeqNum);
+			addField(Tag.TransactTime);
+			addField(Tag.SecurityID);
+			addField(Tag.SecurityIndex);
+
+			addField(Tag.IsLastOfBatch);
+			addField(Tag.AggressorSide);
+		}
+
+
+		private void addOrderBookTag(Side side, int level, OrderBookTag tag) {
+			addOrderBookField(getTagName(side, tag, level), side, level, tag);
+		}
+
+		private void addOrderBookTag(Side side, int level, OrderBookTag tag, DFEType type) {
+			addOrderBookField(getTagName(side, tag, level), side, level, tag, type);
+		}
+
+		public static String getTagName(Side side, OrderBookTag tag, int level) {
+			return String.format("%s_%s_%02d", side, tag, level);
+		}
+	}
+
+	public static final EurexTradingNewOrderSingleFormat eurexTradingNewOrderSingleFormat = new EurexTradingNewOrderSingleFormat();
+	public static class EurexTradingNewOrderSingleFormat extends EurexEtiOrderFormat {
+		public EurexTradingNewOrderSingleFormat() {
+			super(Message.NewOrderSingleShortRequest);
+		}
+	}
+
+//	public static final EurexTradingResponseFormat cmeTradingResponseFormat = new EurexTradingResponseFormat();
+//	public static class EurexTradingResponseFormat extends EurexEtiResponseFormat {
+//		public EurexTradingResponseFormat() {
+//			super(com.maxeler.mpt.cme.ilink.CmeILinkResponseFormat.Message.ExecutionReport);
+//		}
+//	}
+}

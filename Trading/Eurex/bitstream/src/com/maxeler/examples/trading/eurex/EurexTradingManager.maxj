@@ -1,0 +1,62 @@
+package com.maxeler.examples.trading.eurex;
+
+import com.maxeler.maxcompiler.v2.managers.custom.DFELink;
+import com.maxeler.maxcompiler.v2.managers.custom.blocks.KernelBlock;
+import com.maxeler.mpt.core.marketdata.OneEngineParameters;
+import com.maxeler.mpt.eurex.eobi.EurexEobiConfiguration;
+import com.maxeler.mpt.eurex.eobi.EurexEobiHandler;
+import com.maxeler.mpt.eurex.eti.EurexEtiConfiguration;
+import com.maxeler.mpt.eurex.eti.EurexEtiHandler;
+import com.maxeler.mpt.eurex.eti.EurexEtiOrderFormat;
+import com.maxeler.mpt.eurex.one.EurexOneEobiFormat;
+import com.maxeler.mpt.eurex.one.EurexOneTradeKernel;
+import com.maxeler.networking.v1.managers.NetworkManager;
+
+public class EurexTradingManager extends NetworkManager {
+	private static final int MAX_NUM_ETI_SESSIONS = 8;
+
+	public EurexTradingManager(EurexTradingEngineParameters params) {
+		super(params);
+
+		// eobi
+		EurexOneEobiFormat     eobiFformat = new EurexOneEobiFormat(10);
+		EurexEobiConfiguration eobiConfig = new EurexEobiConfiguration("EOBI", params.getMdConnectionA(), params.getMdConnectionB());
+		eobiConfig.setClock(params.getClock());
+		eobiConfig.setMaxSecurities(params.getMaxSecurities());
+		eobiConfig.setUpdateOutputMode(params.getUpdateOutputMode());
+		eobiConfig.addMarketDataOutput(eobiFformat);
+		eobiConfig.setUdpChecksumMode(params.getUdpChecksumMode());
+
+		EurexEobiHandler eobiHandler = new EurexEobiHandler(this, eobiConfig);
+
+		// eti
+		EurexEtiOrderFormat   etiFormat = new EurexOneTradeKernel.MonacoOrder();
+		EurexEtiConfiguration etiConfig = new EurexEtiConfiguration("ETI", params.getOrderEntryConnection());
+		etiConfig.setClock(params.getClock());
+		etiConfig.setMaxSessions(MAX_NUM_ETI_SESSIONS);
+		etiConfig.addOrderInput(etiFormat);
+
+		EurexEtiHandler etiHandler = new EurexEtiHandler(this, etiConfig);
+
+		// trading kernel
+		pushDefaultClock(getNetworkClock(eobiConfig.getFeedAConnection()));
+		KernelBlock tradingStrategy = addKernel(new EurexTradingStrategyKernel(this, "tradingStrategy"
+				, eobiHandler.getMarketDataOutputLinkType(), etiHandler.getOrderInputLinkType(), etiConfig));
+		tradingStrategy.getInput("mdIn") <== eobiHandler.getMarketDataOutput();
+		etiHandler.getOrderInput() <== tradingStrategy.getOutput("orderOut");
+	}
+
+	protected DFELink cs(DFELink link) {
+		return cs(link, false);
+	}
+
+	protected DFELink cs(DFELink link, boolean captureData) {
+		return ((OneEngineParameters) getEngineParameters()).hasChipscope()
+				? debug.chipscope(link, captureData) : link;
+	}
+
+	public static void main(String args[]) {
+		new EurexTradingManager(new EurexTradingEngineParameters(args)).build();
+	}
+
+}
