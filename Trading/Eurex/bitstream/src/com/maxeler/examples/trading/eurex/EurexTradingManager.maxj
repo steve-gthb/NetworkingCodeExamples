@@ -41,7 +41,7 @@ public class EurexTradingManager extends NetworkManager {
 		// trading kernel
 		pushDefaultClock(getNetworkClock(eobiConfig.getFeedAConnection()));
 		KernelBlock tradingStrategy = addKernel(new EurexTradingStrategyKernel(this, "tradingStrategy"
-				, eobiHandler.getMarketDataOutputLinkType(), etiHandler.getOrderInputLinkType(), etiConfig));
+				, eobiHandler.getMarketDataOutputLinkType(), etiHandler.getOrderInputLinkType(), eobiConfig, etiConfig));
 		tradingStrategy.getInput("mdIn") <== eobiHandler.getMarketDataOutput();
 		etiHandler.getOrderInput() <== tradingStrategy.getOutput("orderOut");
 	}
