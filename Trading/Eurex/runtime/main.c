@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 	struct in_addr eobi_incr_b_ip;
 	struct in_addr eobi_snapshots_ip;
 
-	inet_aton("224.0.114.47", &eobi_incr_a_ip);
+	inet_aton("224.0.114.43", &eobi_incr_a_ip);
 	inet_aton("224.0.114.79", &eobi_incr_b_ip);
 	inet_aton("224.0.114.46", &eobi_snapshots_ip);
 
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 	uint16_t eobi_snapshots_port = 59000;
 
 	uint64_t eobi_sec_id            = 566988;
-	uint32_t eobi_market_segment_id = 589;
+	uint32_t eobi_market_segment_id = 30656;
 
 	int c = 0;
 	while( (c = getopt(argc, argv, "t:b:r:n:hp:")) > -1) {
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
 	printf("Run\n");
 	should_run = true;
 	max_eurex_eti_alloc_orders(session, 256);
-	signal(SIGINT, sig_handler);
+	signal(SIGINT | SIGABRT, sig_handler);
 
 	max_eurex_eti_order_event_t order_event;
 	memset(&order_event, 0, sizeof(order_event));
@@ -198,25 +198,16 @@ int main(int argc, char* argv[]) {
 		printf("Event %s\n", OrderType(order_event.type));
 	}
 
+	// sjackson TODO check what happens when maxmpt is freed - need to close tcp connection with enum=1 for rst to be sent
+
+	max_unload(engine);
+
 	printf("Stop");
 	return 0;
 }
+
 /*
 
-
-60 00 00 00
-24 27 00 00
-00 00 00 00 00 00 00 00
-00 00 00 10 ff ff ff ff
-d2 04 00 00 32 2e 30 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 70 61 73 73 77 64
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00
 
 
 */

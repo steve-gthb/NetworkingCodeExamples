@@ -2,11 +2,13 @@
 
 export MAXAPPPKG=com.maxeler.examples.trading.eurex
 export MAXAPPJCP=./bin
-export MAXCOMPILERDIR=/scratch/mbazley/maxelercore/distribution/MaxCompiler
-export MAXCOMPILERNETDIR=/scratch/mbazley/maxelercore/networking/distribution/MaxCompiler
+export MAXMPTDIR=/scratch/sjackson/workspace/maxmpt/eurex/maxmpt
+export MAXELEROSDIR=/scratch/sjackson/maxelercore/maxeleros/maxeleros
+export MAXCOMPILERDIR=/scratch/sjackson/maxelercore/distribution/MaxCompiler
+export MAXCOMPILERNETDIR=/scratch/sjackson/maxelercore/networking/distribution/MaxCompiler
 export MAXTCPFPDIR=/scratch/sjackson/workspace/MaxTcpFastPath/distribution/MaxTcpFastPath-1.1a/lib/MaxTcpFastPath.jar
 export MAXPOWERNETDIR=/scratch/sjackson/workspace/maxpowernet/bin
 export MAXPOWERDIR=/scratch/sjackson/workspace/maxpower/bin
 
-#export CLASSPATH=$MAXAPPJCP:/scratch/sjackson/workspace/maxmpt/eurex/maxmpt/bitstream/bin:/scratch/sjackson/workspace/maxmpt/eurex/maxmpt/bitstream/tests_bin:/scratch/sjackson/workspace/maxmpt/eurex/maxmpt/MaxTcpFastPath/bitstream/bin:$CLASSPATH
-export CLASSPATH=$MAXAPPJCP:/scratch/sjackson/workspace/maxmpt/eurex/maxmpt/bitstream/bin:/scratch/sjackson/workspace/maxmpt/eurex/maxmpt/bitstream/tests_bin:$MAXTCPFPDIR:$MAXPOWERNETDIR:$CLASSPATH
+export PATH=$MAXELEROSDIR/utils:$PATH
+export CLASSPATH=$MAXMPTDIR/bitstream/bin:$MAXMPTDIR/bitstream/tests_bin:$MAXTCPFPDIR:$MAXPOWERNETDIR:$MAXAPPJCP:$CLASSPATH
